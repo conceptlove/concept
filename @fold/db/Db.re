@@ -5,23 +5,24 @@ type fact =
   | Set(list(string), value);
 
 type op =
-  | Push(string);
+  | Push(string)
+  | Pop;
 
-type state = {stack: list(string)};
+type state = {
+  stack: list(string),
+  facts: list(string),
+};
 
-let step = (op: op) =>
-  switch (op) {
-  | Push(term) => (
-      (state: state) => {...state, stack: [term, ...state.stack]}
-    )
+let empty = {stack: [], facts: []};
+
+let step = (state: state, op: op) =>
+  switch (op, state) {
+  | (Push(term), _) => {...state, stack: [term, ...state.stack]}
+
+  | (Pop, {stack: [_, ...stack]}) => {...state, stack}
+  | (Pop, {stack: []}) => state
+
+  | _ => state
   };
 
-let lexer = Genlex.make_lexer(["push"]);
-
-let parseLine = (input: string) =>
-  input |> Stream.of_string |> lexer |> Stream.iter(token => {Js.log(token)});
-
-let parse = (input: string) => {
-  // |> String.split_on_char('\n')
-  input |> String.trim |> String.split_on_char('\n') |> List.map(parseLine);
-};
+let stepAll = List.fold_left(step);
