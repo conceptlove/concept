@@ -1,0 +1,16 @@
+{
+  "private": true,
+  "workspaces": [
+    "@fold/*"
+  ],
+  "scripts": {
+    "build": "bsb -make-world",
+    "start": "bsb -make-world -w",
+    "clean": "bsb -clean-world",
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@glennsl/bs-jest": "^0.5.1",
+    "bs-platform": "^7.3.2"
+  }
+}
