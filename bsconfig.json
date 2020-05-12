@@ -2,6 +2,14 @@
   "name": "concept",
   "sources": [
     {
+      "dir": "@fold/db",
+      "subdirs": []
+    },
+    {
+      "dir": "@fold/db/__tests__",
+      "type": "dev"
+    },
+    {
       "dir": "@fold/transmute",
       "subdirs": []
     },
