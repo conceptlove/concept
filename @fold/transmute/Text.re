@@ -8,6 +8,7 @@ type inline =
   | Bold(inline)
   | Italic(inline);
 
+
 type listType =
   | Ordered
   | Unordered;
