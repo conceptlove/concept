@@ -8,45 +8,53 @@ type value =
   | Int(int)
   | Float(float);
 
-module ImmutableMap =
-  Map.Make({
+module State = {
+  include Map.Make({
     type t = string;
     let compare = compare;
   });
 
-type sMap = ImmutableMap.t(value);
+  let (-->) = (a, b) => (a, b);
 
-let (:=) = (x: string, y: string) => x ++ y;
+  let fromList = (xs: list((string, 'a))) =>
+    xs |> List.fold_left((st, (k, v)) => add(k, v, st), empty);
+};
+
+type sMap = State.t(value);
 
 let lvarCounter = ref(0);
-let var = () => Var("~var:" ++ string_of_int(lvarCounter^));
+// let var = () => Var("~var:" ++ string_of_int(lvarCounter^));
+let var = (name: string) => Var("~var:" ++ name);
 
-let dot = () => ();
+exception Not_a_var;
+
+let name = value =>
+  switch (value) {
+  | Var(name) => name
+  | _ => raise(Not_a_var)
+  };
 
 let rec walk = (key: value, sMap: sMap) => {
   switch (key) {
   | Var(k) =>
-    let value =
-      try(sMap |> ImmutableMap.find(k)) {
-      | Not_found => key
-      };
-
-    walk(value, sMap);
+    switch (sMap |> State.find(k)) {
+    | value => walk(value, sMap)
+    | exception Not_found => key
+    }
   | _ => key
   };
 };
 
-let rec deepwalk = (key, sMap) => {
+let rec deepwalk = (key: value, sMap: sMap): value =>
   switch (walk(key, sMap)) {
   | List(xs) => List(deepwalkList(sMap, xs))
-  | value => value
-  };
-}
+  | x => x
+  }
 and deepwalkList = (sMap: sMap, xs: list(value)): list(value) =>
   switch (xs) {
   | [] => []
   // TODO: these need work
-  | [Dot, x, ...xs] => [deepwalk(x, sMap)]
+  | [Dot, x, ..._] => [deepwalk(x, sMap)]
   | [x, ...xs] => List.append(deepwalkList(sMap, xs), [deepwalk(x, sMap)])
   };
 
@@ -58,8 +66,8 @@ let rec unify = (x, y, sMap) => {
 
   switch (x, y) {
   | (x, y) when x === y => sMap
-  | (Var(id), y) => sMap |> ImmutableMap.add(id, y)
-  | (x, Var(id)) => sMap |> ImmutableMap.add(id, x)
+  | (Var(id), y) => sMap |> State.add(id, y)
+  | (x, Var(id)) => sMap |> State.add(id, x)
   | (List(xs), List(ys)) => unifyList(xs, ys, sMap)
   | _ => raise(Unify_failed)
   };
@@ -78,12 +86,22 @@ and unifyList = (xs: list(value), ys: list(value), sMap: sMap) => {
   };
 };
 
-type clause = sMap => Stream.t(sMap);
+type clause = sMap => Series.t(sMap);
 
-let eq = (x, y, sMap) => Stream.from(unify(x, y, sMap));
+let eq = (x, y, sMap) => Series.from(unify(x, y, sMap));
 
-let and_ = (clauses: Stream.t(clause), sMap): Stream.t(sMap) => {
-  clauses->Stream.flatMap(clause => clause(sMap));
+let and_ = (clauses: Series.t(clause), sMap): Series.t(sMap) => {
+  clauses->Series.flatMap(clause => clause(sMap));
 };
 
-let run = (vars: list(string), goal: clause): Stream.t(sMap) => {};
+let all = clauses => clauses->Series.fromList->and_;
+
+let run = (vars: list(value), goal: clause) => {
+  let sMap = State.empty;
+  goal(sMap)
+  ->Series.map(sMap => {
+      vars |> List.map(var => (var, deepwalk(var, sMap)))
+    });
+};
+
+let (=:) = eq;

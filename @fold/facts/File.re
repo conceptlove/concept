@@ -1,4 +1,4 @@
-open Fact;
+// open Fact;
 
 type named('a) = {.. name: string} as 'a;
 

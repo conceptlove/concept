@@ -21,8 +21,6 @@ let step = (state: state, op: op) =>
 
   | (Pop, {stack: [_, ...stack]}) => {...state, stack}
   | (Pop, {stack: []}) => state
-
-  | _ => state
   };
 
 let stepAll = List.fold_left(step);
