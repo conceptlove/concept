@@ -6,5 +6,8 @@
     "BuckleScript"
   ],
   "author": "Jeff Peterson",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "@retypes/uuid": "^3.0.0-1"
+  }
 }

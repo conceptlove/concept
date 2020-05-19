@@ -6,6 +6,10 @@
       "subdirs": []
     },
     {
+      "dir": "@fold/facts",
+      "subdirs": []
+    },
+    {
       "dir": "@fold/db/__tests__",
       "type": "dev"
     },

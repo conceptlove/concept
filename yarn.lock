@@ -455,6 +455,11 @@
     "@types/yargs" "^15.0.0"
     chalk "^3.0.0"
 
+"@retypes/uuid@^3.0.0-1":
+  version "3.0.0-1"
+  resolved "https://registry.yarnpkg.com/@retypes/uuid/-/uuid-3.0.0-1.tgz#04d97964d14cdf5c3ec48eec83e6fe183acc356c"
+  integrity sha512-PgBrQHZdTkx9pdybMMiFvL2gM1iPnVaYZhx1lfb/JZiiM48a7JjXwb3GnTLlSnuhSR8oGcKzQHBTe+HD3Hrcag==
+
 "@sinonjs/commons@^1.7.0":
   version "1.7.2"
   resolved "https://registry.yarnpkg.com/@sinonjs/commons/-/commons-1.7.2.tgz#505f55c74e0272b43f6c52d81946bed7058fc0e2"
