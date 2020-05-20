@@ -31,7 +31,16 @@ describe("walk", () => {
   );
 });
 
-describe("unification", () => {
+describe("deepwalk", () => {
+  let state =
+    [(name(x), y), (name(y), List([String("found!")]))]->State.fromList;
+
+  test("indirect", () =>
+    expect(deepwalk(x, state)) |> toEqual(String("found!"))
+  );
+});
+
+describe("unify", () => {
   test("eq", () =>
     expect(eq(x, Int(3)) |> run([x]) |> Series.head)
     |> toEqual([(x, Int(3))])
@@ -46,6 +55,7 @@ describe("unification", () => {
     [x =: Int(3)] |> expectAll |> toEqual([(x, Int(3))])
   );
 
+  // expect to raise
   // test("missing", () =>
   //   [] |> expectAll |> toEqual([(x, Int(3))])
   // );

@@ -53,9 +53,9 @@ let rec deepwalk = (key: value, sMap: sMap): value =>
 and deepwalkList = (sMap: sMap, xs: list(value)): list(value) =>
   switch (xs) {
   | [] => []
-  // TODO: these need work
-  | [Dot, x, ..._] => [deepwalk(x, sMap)]
-  | [x, ...xs] => List.append(deepwalkList(sMap, xs), [deepwalk(x, sMap)])
+  // TODO: figure out this dot logic
+  // | [Dot, x, ..._] => [deepwalk(x, sMap)]
+  | [x, ...rest] => [x, ...deepwalkList(sMap, rest)]
   };
 
 exception Unify_failed;
@@ -66,8 +66,10 @@ let rec unify = (x, y, sMap) => {
 
   switch (x, y) {
   | (x, y) when x === y => sMap
-  | (Var(id), y) => sMap |> State.add(id, y)
-  | (x, Var(id)) => sMap |> State.add(id, x)
+
+  | (Var(id), v)
+  | (v, Var(id)) => sMap |> State.add(id, v)
+
   | (List(xs), List(ys)) => unifyList(xs, ys, sMap)
   | _ => raise(Unify_failed)
   };
