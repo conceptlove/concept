@@ -8,6 +8,14 @@ type value =
   | Int(int)
   | Float(float);
 
+exception Not_a_var;
+
+let name = value =>
+  switch (value) {
+  | Var(name) => name
+  | _ => raise(Not_a_var)
+  };
+
 module State = {
   include Map.Make({
     type t = string;
@@ -16,23 +24,16 @@ module State = {
 
   let (-->) = (a, b) => (a, b);
 
+  let get = (key: value) => find(name(key));
+
   let fromList = (xs: list((string, 'a))) =>
     xs |> List.fold_left((st, (k, v)) => add(k, v, st), empty);
 };
 
 type sMap = State.t(value);
 
-let lvarCounter = ref(0);
 // let var = () => Var("~var:" ++ string_of_int(lvarCounter^));
 let var = (name: string) => Var("~var:" ++ name);
-
-exception Not_a_var;
-
-let name = value =>
-  switch (value) {
-  | Var(name) => name
-  | _ => raise(Not_a_var)
-  };
 
 let rec walk = (key: value, sMap: sMap) => {
   switch (key) {
@@ -60,7 +61,7 @@ and deepwalkList = (sMap: sMap, xs: list(value)): list(value) =>
 
 exception Unify_failed;
 
-let rec unify = (x, y, sMap) => {
+let rec unify = (x: value, y: value, sMap: sMap): sMap => {
   let x = walk(x, sMap);
   let y = walk(y, sMap);
 
@@ -93,7 +94,7 @@ type clause = sMap => Series.t(sMap);
 let eq = (x, y, sMap) => Series.from(unify(x, y, sMap));
 
 let and_ = (clauses: Series.t(clause), sMap): Series.t(sMap) => {
-  clauses->Series.flatMap(clause => clause(sMap));
+  clauses->Series.flatScan((sMap, clause) => clause(sMap), sMap);
 };
 
 let all = clauses => clauses->Series.fromList->and_;

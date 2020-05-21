@@ -16,11 +16,11 @@ describe("getters", () => {
   let st = range(1, 3);
 
   test("empty", () =>
-    expect(empty) |> toEqual(End)
+    expect(empty()) |> toEqual(End)
   );
 
   test("empty toList", () =>
-    expect(empty->toList) |> toEqual([])
+    expect(empty()->toList) |> toEqual([])
   );
 
   test("toList", () =>
@@ -62,4 +62,15 @@ describe("getters", () => {
   test("limit 3", () =>
     expect(st->limit(3)->toList) |> toEqual([1, 2, 3])
   );
+
+  test("append", () =>
+    expect(st->append(fromList([4, 5, 6]))->toList)
+    |> toEqual([1, 2, 3, 4, 5, 6])
+  );
+});
+
+describe("gen", () => {
+  test("fib", () =>
+    expect(fib->take(8)->toList) |> toEqual([0, 1, 1, 2, 3, 5, 8, 13])
+  )
 });
