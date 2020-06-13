@@ -6,8 +6,8 @@ let x = var("x");
 let y = var("y");
 let z = var("z");
 
-let expectAll = (input: list(clause)) =>
-  expect([x]->run(all(input))->Series.final);
+let expectAll = (vars: list(value), input: list(clause)) =>
+  expect(run(vars, all(input))->Series.final);
 
 describe("walk", () => {
   let state =
@@ -62,7 +62,7 @@ describe("run", () => {
   );
 
   test("expectAll", () =>
-    [x =: Int(3)] |> expectAll |> toEqual([(x, Int(3))])
+    [x =: Int(3)] |> expectAll([x]) |> toEqual([(x, Int(3))])
   );
 
   // expect to raise
@@ -71,6 +71,27 @@ describe("run", () => {
   // );
 
   test("all indirect", () =>
-    [x =: y, y =: Int(3)] |> expectAll |> toEqual([(x, Int(3))])
+    [x =: y, y =: Int(3), z =: z]
+    |> expectAll([x])
+    |> toEqual([(x, Int(3))])
+  );
+});
+
+describe("patterns and analogy", () => {
+  test("<->", () =>
+    [id("FPGA") <-> id("Brain")] |> expectAll([x]) |> toEqual([(x, x)])
+  );
+
+  let m = id;
+  let c = id;
+
+  test("<->", () =>
+    [
+      c("Money") <-> m("Mana"),
+      c("Purchase") <-> m("Manifestation"),
+      c("Wealth") <-> m("Money"),
+    ]
+    |> expectAll([x])
+    |> toEqual([(x, x)])
   );
 });

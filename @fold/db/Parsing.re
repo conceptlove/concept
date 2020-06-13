@@ -1,6 +1,13 @@
 open Genlex;
 open Stream;
 
+type ast =
+  | List(list(ast))
+  | Var(string)
+  | String(string)
+  | Int(int)
+  | Float(float);
+
 let lexer = make_lexer(["push"]);
 
 let parseLine = (input: string) => input |> of_string |> lexer;

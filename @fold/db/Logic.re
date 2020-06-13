@@ -1,7 +1,15 @@
 type name = string;
 
+module SMap = {
+  include Map.Make({
+    type t = string;
+    let compare = compare;
+  });
+};
+
 type value =
   | Dot
+  | Map(SMap.t(value))
   | List(list(value))
   | Var(name)
   | String(string)
@@ -17,12 +25,11 @@ let name = value =>
   };
 
 module State = {
-  include Map.Make({
-    type t = string;
-    let compare = compare;
-  });
+  include SMap;
 
-  let (-->) = (a, b) => (a, b);
+  module Op = {
+    let (-->) = (a, b) => (a, b);
+  };
 
   let get = (key: value) => find(name(key));
 
@@ -32,8 +39,14 @@ module State = {
 
 type sMap = State.t(value);
 
-// let var = () => Var("~var:" ++ string_of_int(lvarCounter^));
-let var = (name: string) => Var("~var:" ++ name);
+let varCounter = ref(1);
+let var = (name: string) =>
+  ["~var", string_of_int(varCounter^), name]
+  |> String.concat(":")
+  |> (a => Var(a));
+
+// Like a var, but singletons.
+let id = (name: string) => Var("~id:" ++ name);
 
 let rec walk = (key: value, sMap: sMap) => {
   switch (key) {
@@ -91,14 +104,6 @@ and unifyList = (xs: list(value), ys: list(value), sMap: sMap) => {
 
 type clause = sMap => Series.t(sMap);
 
-let eq = (x, y, sMap) => Series.from(unify(x, y, sMap));
-
-let and_ = (clauses: Series.t(clause), sMap): Series.t(sMap) => {
-  clauses->Series.flatScan((sMap, clause) => clause(sMap), sMap);
-};
-
-let all = clauses => clauses->Series.fromList->and_;
-
 let run = (vars: list(value), goal: clause) => {
   let sMap = State.empty;
   goal(sMap)
@@ -107,4 +112,47 @@ let run = (vars: list(value), goal: clause) => {
     });
 };
 
+let eq = (x, y, sMap) => Series.from(unify(x, y, sMap));
+
+let and_ = (clauses: Series.t(clause), sMap): Series.t(sMap) => {
+  clauses->Series.flatScan((sMap, clause) => clause(sMap), sMap);
+};
+
+let all = clauses => clauses->Series.fromList->and_;
+
+let conso = (first, rest, out) =>
+  switch (rest) {
+  | Var(_) => eq(List([first, Dot, rest]), out)
+  | List(xs) => eq(List([first, ...xs]), out)
+  | _ => raise(Unify_failed)
+  };
+
+let cons = (first, rest) =>
+  switch (rest) {
+  | Var(_) => List([first, Dot, rest])
+  | List(xs) => List([first, ...xs])
+  | _ => raise(Unify_failed)
+  };
+
+let emptyo = x => eq(x, List([]));
+let empty = List([]);
+
+let firsto = (first, out, ()) => {
+  let rest = var("rest");
+  conso(first, rest, out);
+};
+
+let first = (first, ()) => {
+  cons(first, var("rest"));
+};
+
+let resto = (rest, out, ()) => {
+  conso(var("first"), rest, out);
+};
+
+let rest = (rest, ()) => {
+  cons(var("first"), rest);
+};
+
 let (=:) = eq;
+let (<->) = eq;

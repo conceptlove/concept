@@ -126,6 +126,11 @@ let rec step = (init: 'a, nxt: 'a => 'a): t('a) =>
 let rec gen = (fn: ('a, 'a) => 'a, a: 'a, b: 'a) =>
   Step(a, () => gen(fn, b, fn(a, b)));
 
+// NOTE(jeff): I was mostly just playing around with these
 let genAdd = gen((a, b) => a + b);
+let genSub = gen((a, b) => a - b);
+let genDiff = gen((a, b) => abs(a - b));
+let genXor = gen((a, b) => a lxor b);
+let genNand = gen((a, b) => - (a + b));
 
 let fib = genAdd(0, 1);
