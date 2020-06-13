@@ -1,5 +1,4 @@
-open Jest;
-open Expect;
+open TestHelper;
 open Parser;
 
 let toParse = (step, remain) => toEqual(Good(step, remain));

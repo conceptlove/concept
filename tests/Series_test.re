@@ -1,5 +1,4 @@
-open Jest;
-open Expect;
+open TestHelper;
 open Series;
 
 // let expected = (expected: (value, value), input: clause) =>

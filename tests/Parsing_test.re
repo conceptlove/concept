@@ -1,5 +1,4 @@
-open Jest;
-open Expect;
+open TestHelper;
 // open Parsing;
 
 describe("parseLine", () => {

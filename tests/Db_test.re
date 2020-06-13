@@ -1,5 +1,4 @@
-open Jest;
-open Expect;
+open TestHelper;
 open Db;
 
 let expected = (expected: state, input: list(op)) =>
