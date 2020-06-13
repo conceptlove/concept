@@ -2,27 +2,12 @@
   "name": "concept",
   "sources": [
     {
-      "dir": "@fold/db"
+      "dir": "src",
+      "subdirs": true
     },
     {
-      "dir": "@fold/db/__tests__",
-      "type": "dev"
-    },
-    {
-      "dir": "@fold/facts"
-    },
-    {
-      "dir": "@fold/parser"
-    },
-    {
-      "dir": "@fold/parser/__tests__",
-      "type": "dev"
-    },
-    {
-      "dir": "@fold/transmute"
-    },
-    {
-      "dir": "@fold/transmute/__tests__",
+      "dir": "tests",
+      "subdirs": true,
       "type": "dev"
     }
   ],

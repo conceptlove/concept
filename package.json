@@ -1,7 +1,12 @@
 {
   "private": true,
-  "workspaces": [
-    "@fold/*"
+  "name": "@conceptlove/db",
+  "version": "0.1.0",
+  "author": "Jeff Peterson",
+  "license": "MIT",
+  "keywords": [
+    "reason",
+    "BuckleScript"
   ],
   "scripts": {
     "build": "bsb -make-world",
@@ -9,8 +14,16 @@
     "clean": "bsb -clean-world",
     "test": "jest"
   },
+  "dependencies": {
+    "@retypes/uuid": "^3.0.0-1"
+  },
   "devDependencies": {
     "@glennsl/bs-jest": "^0.5.1",
     "bs-platform": "^7.3.2"
+  },
+  "jest": {
+    "testMatch": [
+      "**/*_test.js"
+    ]
   }
 }
