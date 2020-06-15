@@ -1,5 +1,5 @@
 type input =
-  | Skip(string, int);
+  | Slice(string, int, int);
 
 type step('a) =
   | Good('a, string)
@@ -24,7 +24,7 @@ let run = (Parser(fn), input) =>
   | Bad(msg) => raise(Parse_error(msg))
   };
 
-let success = x => Parser(input => Good(x, input));
+let succeed = x => Parser(input => Good(x, input));
 let failure = Parser(input => Bad(input));
 
 let map = (parser, f) =>
@@ -36,7 +36,7 @@ let map = (parser, f) =>
       },
   );
 
-let andThen = (fn: 'a => t('b), Parser(parseA)): t('b) =>
+let andThen = (Parser(parseA), fn: 'a => t('b)): t('b) =>
   Parser(
     input =>
       switch (parseA(input)) {
@@ -64,6 +64,9 @@ let tuple = (a, b) =>
       },
   );
 
+let keep = (fP, xP) => fP->tuple(xP)->map(((f, x)) => f(x));
+let skip = (fP, xP) => fP->tuple(xP)->map(((f, _)) => f);
+
 let orElse = (a: t('a), b: t('a)): t('a) =>
   Parser(
     input =>
@@ -73,7 +76,7 @@ let orElse = (a: t('a), b: t('a)): t('a) =>
       },
   );
 
-let oneOf = parsers => reduce(orElse, parsers);
+let oneOf = reduce(orElse, _);
 
 let range = (a, b) =>
   Parser(
@@ -89,8 +92,16 @@ let range = (a, b) =>
       },
   );
 
+let rec oneOrMore = parser => parser->andThen(_ => oneOrMore(parser));
+
+// let many = parser =>
+//   parser->andThen(result =>
+//     Parser(input =>
+
+//     )
+//   )
+
 // let applyP = (fP, xP) => xP->andThen(fP)->map(((f, x)) => f(x));
-// let many = parsers => reduce(andThen, parsers);
 // let (|.) = (Parser(keep), Parser(ignor)) => Parser(keep);
 // let (|=) = (Parser(fn), Parser(v)) => Parser(str => fn(v(str)));
 
@@ -102,4 +113,4 @@ let letter = lower->orElse(upper);
 let digit = range('0', '9');
 
 // let int = many(digit) |> map(int_of_string);
-let float = success(0);
+let float = succeed(0);

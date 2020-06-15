@@ -33,4 +33,15 @@ describe("Parser", () => {
   test("a orElse b", () =>
     expect(a->orElse(b)->parse("AFB")) |> toParse("A", "FB")
   );
+
+  let spaces = char(' '); //->oneOrMore()
+  let tup2 = (a, b) => (a, b);
+
+  test("keep and skip", () =>
+    expectParser(
+      succeed(tup2)->keep(letter)->skip(spaces)->keep(letter),
+      "a b",
+    )
+    |> toParse(("a", "b"), "")
+  );
 });
