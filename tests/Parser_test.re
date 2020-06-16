@@ -1,38 +1,43 @@
 open TestHelper;
 open Parser;
 
-let toParse = (step, remain) => toEqual(Good(step, remain));
 let toFail = string => toEqual(Bad(string));
 
-let expectParser = (parser, string) => expect(parser->parse(string));
+let expectParser = (parser, string) => expect(parser->run(string));
 
 describe("Parser", () => {
   let a = char('A');
   let b = char('B');
 
   test("range", () =>
-    expectParser(range('a', 'b'), "abc") |> toParse("a", "bc")
+    expectParser(range('a', 'b'), "abc") |> toEqual("a")
   );
 
   test("lower", () =>
-    expectParser(lower, "def") |> toParse("d", "ef")
+    expectParser(lower, "def") |> toEqual("d")
   );
 
   test("upper", () =>
-    expectParser(upper, "DEF") |> toParse("D", "EF")
+    expectParser(upper, "DEF") |> toEqual("D")
   );
 
   test("digit", () =>
-    expectParser(digit, "123") |> toParse("1", "23")
+    expectParser(digit, "123") |> toEqual("1")
   );
 
-  test("a then b", () =>
-    expect(a->tuple(b)->parse("ABC")) |> toParse(("A", "B"), "C")
+  test("a tuple b", () =>
+    expectParser(a->tuple(b), "ABC") |> toEqual(("A", "B"))
   );
 
   test("a orElse b", () =>
-    expect(a->orElse(b)->parse("AFB")) |> toParse("A", "FB")
+    expectParser(a->orElse(b), "AFB") |> toEqual("A")
   );
+
+  test("a andThen b", () => {
+    let charInc = ch => Char.chr(ch->Char.code + 1);
+    expectParser(letter->andThen(str => char(str.[0]->charInc)), "LMN")
+    |> toEqual("M");
+  });
 
   let spaces = char(' '); //->oneOrMore()
   let tup2 = (a, b) => (a, b);
@@ -42,6 +47,30 @@ describe("Parser", () => {
       succeed(tup2)->keep(letter)->skip(spaces)->keep(letter),
       "a b",
     )
-    |> toParse(("a", "b"), "")
+    |> toEqual(("a", "b"))
+  );
+
+  test("append", () =>
+    expectParser(letter->append(letter), "abc") |> toEqual("ab")
+  );
+
+  test("digits", () =>
+    expectParser(digits, "123ab") |> toEqual("123")
+  );
+
+  test("int", () =>
+    expectParser(int, "123ab") |> toEqual(123)
+  );
+
+  test("negative int", () =>
+    expectParser(int, "-123ab") |> toEqual(-123)
+  );
+
+  test("float", () =>
+    expectParser(Parser.float, "123.45") |> toEqual(123.45)
+  );
+
+  test("negative float", () =>
+    expectParser(Parser.float, "-123.45") |> toEqual(-123.45)
   );
 });

@@ -1,14 +1,20 @@
 type input =
-  | Slice(string, int, int);
+  | Slice(string, int);
 
 type step('a) =
-  | Good('a, string)
+  | Good('a, input)
   | Bad(string);
 
 type t('a) =
-  | Parser(string => step('a));
+  | Parser(input => step('a));
 
 exception Parse_error(string);
+
+let slice = str => Slice(str, 0);
+let length = (Slice(str, offset)) => str->String.length - offset;
+let first = (Slice(str, n)) => str.[n];
+let next = (Slice(str, n)) => Slice(str, n + 1);
+let substr = (Slice(str, offset), n) => String.sub(str, offset, n);
 
 let reduce = (fn, list) =>
   switch (list) {
@@ -18,14 +24,14 @@ let reduce = (fn, list) =>
 
 let parse = (Parser(fn), input) => fn(input);
 
-let run = (Parser(fn), input) =>
-  switch (fn(input)) {
+let run = (Parser(fn), str) =>
+  switch (str->slice->fn) {
   | Good(a, _) => a
   | Bad(msg) => raise(Parse_error(msg))
   };
 
 let succeed = x => Parser(input => Good(x, input));
-let failure = Parser(input => Bad(input));
+let failure = msg => Parser(_ => Bad(msg));
 
 let map = (parser, f) =>
   Parser(
@@ -51,22 +57,6 @@ let andThen = (Parser(parseA), fn: 'a => t('b)): t('b) =>
       },
   );
 
-let tuple = (a, b) =>
-  Parser(
-    input =>
-      switch (parse(a, input)) {
-      | Bad(err) => Bad(err)
-      | Good(value1, remaining1) =>
-        switch (parse(b, remaining1)) {
-        | Bad(err) => Bad(err)
-        | Good(value2, remaining2) => Good((value1, value2), remaining2)
-        }
-      },
-  );
-
-let keep = (fP, xP) => fP->tuple(xP)->map(((f, x)) => f(x));
-let skip = (fP, xP) => fP->tuple(xP)->map(((f, _)) => f);
-
 let orElse = (a: t('a), b: t('a)): t('a) =>
   Parser(
     input =>
@@ -76,23 +66,55 @@ let orElse = (a: t('a), b: t('a)): t('a) =>
       },
   );
 
+let andTry = (a: t('a), fn: 'a => t('a)): t('a) =>
+  a->andThen(v => fn(v)->orElse(succeed(v)));
+
+let withDefault = (parser, value) => parser->orElse(succeed(value));
+
 let oneOf = reduce(orElse, _);
 
-let range = (a, b) =>
+let charIf = (fn: char => bool) =>
   Parser(
-    str =>
-      if (str->String.length == 0) {
+    input =>
+      if (input->length <= 0) {
         Bad("Unexpected end of input");
-      } else if (str.[0] < min(a, b) || str.[0] > max(a, b)) {
-        let msg =
-          Printf.sprintf("Expected '%c' to '%c'. Got '%c'", a, b, str.[0]);
-        Bad(msg);
+      } else if (fn(first(input))) {
+        Good(input->substr(1), next(input));
       } else {
-        Good(str->String.sub(0, 1), str->(Js.String.sliceToEnd(~from=1)));
+        let msg = Printf.sprintf("Unexpected '%c'.", first(input));
+        Bad(msg);
       },
   );
 
-let rec oneOrMore = parser => parser->andThen(_ => oneOrMore(parser));
+let range = (a, b) => charIf(ch => ch >= min(a, b) && ch <= max(a, b));
+
+let tuple = (a, b) =>
+  Parser(
+    input =>
+      switch (parse(a, input)) {
+      | Bad(err) => Bad(err)
+      | Good(value1, rest) =>
+        switch (parse(b, rest)) {
+        | Bad(err) => Bad(err)
+        | Good(value2, rest) => Good((value1, value2), rest)
+        }
+      },
+  );
+
+let keep = (fP, xP) => fP->tuple(xP)->map(((f, x)) => f(x));
+let skip = (fP, xP) => fP->tuple(xP)->map(((f, _)) => f);
+
+let rec fold = (parser, init, fn) =>
+  parser
+  ->andThen(x => fold(parser, fn(init, x), fn))
+  ->orElse(succeed(init));
+
+let flag = (parser, fn) => parser->map(_ => fn)->withDefault(x => x);
+
+let append = (a, b) => succeed((++))->keep(a)->keep(b);
+
+// let rec charsWhile = (fn: char => bool): t(string) =>
+//   charIf(fn)->andThen(a => charsWhile)
 
 // let many = parser =>
 //   parser->andThen(result =>
@@ -102,15 +124,20 @@ let rec oneOrMore = parser => parser->andThen(_ => oneOrMore(parser));
 //   )
 
 // let applyP = (fP, xP) => xP->andThen(fP)->map(((f, x)) => f(x));
-// let (|.) = (Parser(keep), Parser(ignor)) => Parser(keep);
-// let (|=) = (Parser(fn), Parser(v)) => Parser(str => fn(v(str)));
+let (&.) = skip;
+let (&=) = keep;
 
-let char = c => range(c, c);
+let char = c => charIf(c2 => c === c2);
 let lower = range('a', 'z');
 let upper = range('A', 'Z');
 let letter = lower->orElse(upper);
 
 let digit = range('0', '9');
+let digits = digit->fold("", (++));
 
-// let int = many(digit) |> map(int_of_string);
-let float = succeed(0);
+let posInt = digits->map(int_of_string);
+let int = char('-')->flag(( * )(-1))->keep(posInt);
+
+let posFloat =
+  digits->append(char('.'))->append(digits)->map(float_of_string);
+let float = char('-')->flag(( *. )(-1.))->keep(posFloat);

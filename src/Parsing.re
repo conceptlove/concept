@@ -1,24 +1,23 @@
-open Genlex;
-open Stream;
+open Parser;
 
-type ast =
-  | List(list(ast))
-  | Var(string)
+type literal =
   | String(string)
   | Int(int)
   | Float(float);
 
-let lexer = make_lexer(["push"]);
+type expr =
+  | List(list(expr))
+  | Var(string)
+  | Literal(literal);
 
-let parseLine = (input: string) => input |> of_string |> lexer;
+type statement =
+  | Eq(expr, expr);
 
-// let buildOp = (tokens: list(token), stream: Stream.t(token)) =>
-//   switch (tokens) {
-//   | [Kwd("push"), String(x)] => Db.Push(x)
-//   | _ =>
-//   };
+let int = Parser.int->map(x => Int(x));
+let float = Parser.float->map(x => Float(x));
 
-// let parse = (_input: string): list(Db.op) => {
-//   [];
-//     // input |> String.trim |> String.split_on_char('\n') |> List.map(parseLine);
-// };
+let literal = oneOf([int, float]);
+
+let expr = oneOf([literal->map(x => Literal(x))]);
+
+let eq = succeed((a, b) => Eq(a, b)) &= expr &. char('=') &= expr;
