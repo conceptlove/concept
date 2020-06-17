@@ -1,10 +1,8 @@
 open TestHelper;
-// open Parsing;
-
-describe("parseLine", () => {
-  test("push", ()
-    // expect({|push "abc"|} |> parseLine) |> toEqual(Db.Push("abc"))
-    =>
-      expect(1) |> toBe(1)
-    )
+open Parsing;
+let run = Parser.run;
+describe("statement", () => {
+  test("eq", () =>
+    expect(eq->run("123 = x")) |> toEqual(Eq(Int(123), Ident("x")))
+  )
 });
