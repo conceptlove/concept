@@ -103,9 +103,10 @@ let charIf = (fn: char => bool) =>
   );
 
 let range = (a, b) => charIf(ch => ch >= min(a, b) && ch <= max(a, b));
+let char = c => range(c, c);
 
-let keep = (f, x) => f->map2(x, apply);
-let skip = (f, x) => f->map2(x, (f, _) => f);
+let keep = (fP, xP) => fP->map2(xP, apply);
+let skip = (fP, xP) => fP->map2(xP, (f, _) => f);
 
 let rec repeat = (parser, init: 'accum, fn) =>
   parser
@@ -116,6 +117,11 @@ let rec repeat = (parser, init: 'accum, fn) =>
 let flag = (parser, fn) => succeed(fn)->skip(parser)->withDefault(x => x);
 let append = (a, b) => a->map2(b, (++));
 let many = parser => parser->repeat("", (++));
+
+let wrap = (parser, before, after) =>
+  start()->skip(before)->keep(parser)->skip(after);
+let parens = wrap(_, char('('), char(')'));
+let brackets = wrap(_, char('['), char(']'));
 
 // let rec charsWhile = (fn: char => bool): t(string) =>
 //   charIf(fn)->andThen(a => charsWhile)
@@ -132,7 +138,6 @@ let (&.) = skip;
 let (&=) = keep;
 // let (++=) = (a, b) => keep(append(b), a);
 
-let char = c => range(c, c);
 let lower = range('a', 'z');
 let upper = range('A', 'Z');
 

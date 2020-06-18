@@ -1,14 +1,5 @@
 open Parser;
-
-type expr =
-  | List(list(expr))
-  | Ident(string)
-  | String(string)
-  | Int(int)
-  | Float(float);
-
-type statement =
-  | Eq(expr, expr);
+open Data;
 
 let int = int->map(x => Int(x));
 let float = Parser.float->map(x => x->Float);
