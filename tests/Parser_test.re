@@ -153,4 +153,21 @@ describe("Parser", () => {
   test("spaced x", () =>
     expect(char('x')->spaced->run("  x  ")) |> toEqual("x")
   );
+
+  test("simple string", () =>
+    expect(string->run({|"testing"|})) |> toEqual("testing")
+  );
+
+  test("string with newline", () =>
+    expect(string->run({|"\ntesting\n"|})) |> toEqual("\ntesting\n")
+  );
+
+  test("string with escaped newline", () =>
+    expect(string->run({|"hi \
+there"|})) |> toEqual("hi there")
+  );
+
+  test("string with escaped quote", () =>
+    expect(string->run({|"\"testing\""|})) |> toEqual({|"testing"|})
+  );
 });

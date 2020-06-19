@@ -1,21 +1,25 @@
 open Parser;
-open Data;
+open DataAst;
 
 let int = int->map(x => Int(x));
 let float = Parser.float->map(x => x->Float);
+let string = string->map(x => String(x));
 
-let literal = oneOf([int, float]);
+let literal = oneOf([int, float, string]);
 
 let ident = letters->map(x => x->Ident);
-let expr = oneOf([literal, ident]);
 
-// let eq = succeed((a, b) => Eq(a, b)) &= expr &. char('=')->spaced &= expr;
+let expr = {
+  let rec exp = () => oneOf([literal, ident, parens(exp->lazy_)]);
+  exp();
+};
+
 let eq =
   succeed((a, b) => Eq(a, b))
   &= expr
-  &. space->many
+  &. spaces
   &. char('=')
-  &. space->many
+  &. spaces
   &= expr;
 
 let statement = oneOf([eq]);

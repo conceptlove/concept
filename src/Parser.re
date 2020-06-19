@@ -22,17 +22,17 @@ type t('a) =
 
 exception Parse_error(string);
 
-let trace = (tag, v) => {
-  Js.log2(tag ++ ":", v);
-  v;
-};
-
+/**
+ * Like `List.fold_left` but raises for empty lists and requires no
+ * initial value.
+ * */
 let reduce = (fn, list) =>
   switch (list) {
   | [] => raise(Not_found)
   | [x, ...xs] => List.fold_left(fn, x, xs)
   };
 
+/** Convenience fn to step a Parser. */
 let parse = (Parser(fn), input) => fn(input);
 
 let run = (Parser(fn), str) =>
@@ -71,6 +71,7 @@ let andThen = (Parser(parseA), fn: 'a => t('b)): t('b) =>
   );
 
 let map2 = (a, b, fn) => a->andThen(v => b->map(fn(v)));
+let lazy_ = (fn: unit => t('a)) => succeed()->andThen(fn);
 
 let orElse = (a: t('a), b: t('a)): t('a) =>
   Parser(
@@ -104,6 +105,7 @@ let charIf = (fn: char => bool) =>
 
 let range = (a, b) => charIf(ch => ch >= min(a, b) && ch <= max(a, b));
 let char = c => range(c, c);
+let anyChar = charIf(always(true));
 
 let keep = (fP, xP) => fP->map2(xP, apply);
 let skip = (fP, xP) => fP->map2(xP, (f, _) => f);
@@ -144,7 +146,7 @@ let upper = range('A', 'Z');
 let space = char(' ');
 let spaces = space->many;
 
-let spaced = parser => start()->skip(spaces)->keep(parser)->skip(spaces);
+let spaced = parser => start() &. spaces &= parser &. spaces;
 
 let letter = lower->orElse(upper);
 let letters = letter->many;
@@ -153,9 +155,29 @@ let digit = range('0', '9');
 let digits = digit->many;
 
 let posInt = digits->map(int_of_string);
-let int = char('-')->flag(x => - x)->keep(posInt);
+let int = char('-')->flag(x => - x) &= posInt;
 
 let posFloat =
   succeed(float_of_string) &= digits->append(char('.'))->append(digits);
 
 let float = char('-')->flag(x => -. x) &= posFloat;
+
+let escaped = fn => start() &. char('\\') &= anyChar->andTry(fn);
+
+let defaultEscape = letter =>
+  switch (letter) {
+  | "\n" => succeed("")
+  | "\"" => succeed("\"")
+  | "'" => succeed("'")
+  | "n" => succeed("\n")
+  | "t" => succeed("\t")
+  | x => succeed(x)
+  };
+
+let quoted = (quote, escFn) =>
+  start()
+  &. char(quote)
+  &= escaped(escFn)->orElse(charIf(ch => ch != quote))->many
+  &. char(quote);
+
+let string = quoted('"', defaultEscape);
